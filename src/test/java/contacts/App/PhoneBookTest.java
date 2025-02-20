@@ -4,12 +4,9 @@ import contacts.contact.Contact;
 import contacts.contact.Person;
 import contacts.contact.Organization;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +27,6 @@ private Scanner sc;
 
 @BeforeEach
 void setUp() {
-    MockitoAnnotations.openMocks(this);
     sc = mock(Scanner.class); // Mock the Scanner class
     contactsList = new ArrayList<>();
     mockContact = mock(Contact.class); // Mock the Contact class
@@ -65,14 +61,17 @@ void setUp() {
     }
 
     @Test
-    @Disabled
     void testEditContact_validIndexAndBackAction() {
-        when(sc.nextLine()).thenReturn("back");
+        try (MockedStatic<Menu> mockedMenu = mockStatic(Menu.class)) {
+            when(sc.nextLine()).thenReturn("back");
 
-        // Simulate the user's valid input
-        String action = "1";
-        phoneBook.editContact(sc, contactsList, action);
-        doNothing().doReturn(mockMenu);
+            // Simulate the user's valid input
+            String action = "1";
+            phoneBook.editContact(sc, contactsList, action);
+
+            // Verify that the editFields method is called
+            verify(mockContact).getFields();
+        }
     }
 
     @Test
@@ -88,7 +87,7 @@ void setUp() {
 
     @Test
     public void testSearchMenu_Results() {
-        try (MockedStatic<Menu> mockedMenu = Mockito.mockStatic(Menu.class)) {
+        try (MockedStatic<Menu> mockedMenu = mockStatic(Menu.class)) {
             // Simulating a search with no results
 //            mockAddPersonContact();
             when(sc.nextLine()).thenReturn("person");
@@ -99,11 +98,33 @@ void setUp() {
             when(sc.nextLine()).thenReturn("+123456789");
 
             phoneBook.addContact(sc);
-//            when(sc.nextLine()).thenReturn("back");
-            String searchInput = "John";
-            Scanner sc = new Scanner(searchInput);
+            when(sc.nextLine())
+                    .thenReturn("1234")
+                    .thenReturn("back");
+
             phoneBook.searchContact(sc);
         }
+    }
+
+    @Test
+    public void testSearchMenu_whenListIsEmpty() {
+        List<Contact> contacts = List.of();
+
+        phoneBook.searchMenu(sc, contacts);
+    }
+
+    @Test
+    public void testSearchMenu_whenActionIsAgain() {
+        when(sc.nextLine()).thenReturn("again");
+
+        phoneBook.searchMenu(sc, contactsList);
+    }
+
+    @Test
+    public void testSearchMenu_whenActionIsEditContact() {
+        when(sc.nextLine()).thenReturn("edit");
+
+        phoneBook.searchMenu(sc, contactsList);
     }
 
     @Test
@@ -115,63 +136,6 @@ void setUp() {
         // Call the editContact method
         phoneBook.editContact(sc, phoneBook.getContactsList(), "1");
 
-        // Verify that editFields() was called on the selected contact
-      //  verify(contactMock, times(1)).editFields(sc);
-    }
-
-
-    @Test
-    @Disabled
-    public void testSearchMenu_WithResults() {
-        when(sc.nextLine())
-                .thenReturn("person")
-                .thenReturn("John")
-                .thenReturn("Doe")
-                .thenReturn("1990-12-20")
-                .thenReturn("M")
-                .thenReturn("+123456789"); // phone number
-
-        phoneBook.addContact(sc);
-
-        String searchInput = "John";
-        Scanner sc = new Scanner(searchInput);
-        phoneBook.searchContact(sc);
-
-        // Simulate selecting "1" for the first contact
-        String actionInput = "1"; // Select first contact
-        Scanner scAction = new Scanner(actionInput);
-        phoneBook.editContact(scAction, phoneBook.getContactsList(), "1");
-
-        assertEquals(2, phoneBook.contactListSize());
-    }
-
-    @Test
-    @Disabled
-    public void testSearchMenu_BackAction() {
-        // Add a contact for the search
-        when(sc.nextLine())
-                .thenReturn("person")
-                .thenReturn("John")
-                .thenReturn("Doe")
-                .thenReturn("1990-12-20")
-                .thenReturn("M")
-                .thenReturn("+123456789"); // phone number
-
-        phoneBook.addContact(sc);
-
-        String searchInput = "John";
-        Scanner sc = new Scanner(searchInput);
-        phoneBook.searchContact(sc);
-
-        when(sc.nextLine()).thenReturn("again");
-        // Simulate selecting "back"
-        String actionInput = "again"; // Go back to menu
-        Scanner scAction = new Scanner(actionInput);
-        phoneBook.searchMenu(scAction, phoneBook.getContactsList());
-//        when(sc.nextLine()).thenReturn("exit");
-
-        // Ensure it returns to the menu (you may need to add more validation based on your logic)
-//        assertNotNull(phoneBook);
     }
 
     @Test
@@ -305,7 +269,7 @@ void setUp() {
     // Test selecting "back" action to return to the menu
     @Test
     void testListContactsAndGoBack() {
-        try (MockedStatic<Menu> mockedMenu = Mockito.mockStatic(Menu.class)) {
+        try (MockedStatic<Menu> mockedMenu = mockStatic(Menu.class)) {
             // Add a person contact
             mockAddPersonContact();
             when(sc.nextLine()).thenReturn("back");
